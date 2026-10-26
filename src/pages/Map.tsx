@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { ActionButton, TrayGrid } from "@/components/ui";
 import { addMapEntity, applySiteTemplate, createPlanterForEntity, deleteMapEntity, setSite, setZone, setZoneRun, updateGarden, updateMapEntity } from "@/lib/actions";
@@ -84,7 +84,11 @@ function fitView(pj: Projector, width: number, height: number): Pick<View, "zoom
 }
 
 
-export function MapPage() {
+/**
+ * The map page, or with `home` the home page: the same map with the home page's heading, and its column beside the map in place of the map tools.
+ * Either way, selecting something on the map puts its editor in that column.
+ */
+export function MapPage({ home }: { home?: { head: ReactNode; side: ReactNode } }) {
   const { data, today, act } = useGarden();
   const savedSite: Site = data.garden.site ?? DEFAULT_SITE;
   // While the compass is being turned, north follows it before it's saved.
@@ -488,14 +492,18 @@ export function MapPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Garden map</h1>
-          <p className="sub">The whole lot, house and yards. Drag to pan, scroll or pinch to zoom, tap something to select it, then drag it to move.</p>
+      {home ? (
+        home.head
+      ) : (
+        <div className="page-head">
+          <div>
+            <h1>Garden map</h1>
+            <p className="sub">The whole lot, house and yards. Drag to pan, scroll or pinch to zoom, tap something to select it, then drag it to move.</p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="map-layout">
+      <div className={`map-layout ${home ? "home" : ""}`}>
         <div className="map-main">
         <div className="map-wrap card" ref={wrapRef}>
           <svg
@@ -593,6 +601,8 @@ export function MapPage() {
         <aside className="map-panel stack">
           {selected ? (
             <EntityPanel key={selected.id} e={selected} onClose={() => select(null)} onSelect={select} openingSel={openingSel} setOpeningSel={setOpeningSel} />
+          ) : home ? (
+            home.side
           ) : (
             <>
               {!empty && <WateringPanel onSelect={select} onAdd={add} onWatch={watch} />}

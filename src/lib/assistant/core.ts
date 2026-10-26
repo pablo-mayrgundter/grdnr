@@ -113,6 +113,10 @@ export function buildContext(data: GardenData, userName: string | null, location
   const all = plantingViews(data, today);
   const parts: string[] = [`Today: ${today} (${formatDate(today, { weekday: true })}), garden timezone ${data.garden.timezone}.`, `User: ${userName ?? "unknown"}.`];
   let photoId: string | null = null;
+  const pushOpenTasks = () => {
+    const tasks = tasksFor(data);
+    if (tasks.length) parts.push(`Open tasks:\n${tasks.map((t) => `- ${t.dueDate}: ${t.title}${t.plantingId ? ` (planting [${t.plantingId}])` : ""}`).join("\n")}`);
+  };
 
   if (page.kind === "planting" && page.id) {
     const p = all.find((x) => x.id === page.id);
@@ -153,14 +157,15 @@ export function buildContext(data: GardenData, userName: string | null, location
       );
       photoId = photosFor(data, { speciesId: s.id, kind: "packet_back" })[0]?.id ?? null;
     }
-  } else if (page.kind === "map") {
+  } else if (page.kind === "map" || page.kind === "dashboard") {
+    // The home page is the map too, with today's care and what's coming up beside it.
     const sel = new URLSearchParams(search).get("e");
     const e = sel ? data.mapEntities.find((m) => m.id === sel) : undefined;
-    parts.push(`Viewing: the garden map.${e ? ` Selected: ${mapEntitySummary(data, e)}` : ""}`, mapSummary(data));
+    parts.push(`Viewing: ${page.kind === "map" ? "the garden map" : "the home page: the garden map, with today's care and what's coming up beside it"}.${e ? ` Selected: ${mapEntitySummary(data, e)}` : ""}`, mapSummary(data));
+    if (page.kind === "dashboard") pushOpenTasks();
   } else {
     parts.push(`Viewing: the ${page.kind === "other" ? "app" : page.kind} page.`);
-    const tasks = tasksFor(data);
-    if (tasks.length) parts.push(`Open tasks:\n${tasks.map((t) => `- ${t.dueDate}: ${t.title}${t.plantingId ? ` (planting [${t.plantingId}])` : ""}`).join("\n")}`);
+    pushOpenTasks();
   }
 
   parts.push(`Planters: ${sortedTrays(data).map((t) => `${t.name} [${t.id}]`).join(", ")}`);

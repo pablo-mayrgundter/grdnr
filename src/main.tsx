@@ -11,7 +11,6 @@ import { GardenProvider, useGarden } from "./lib/GardenContext";
 import { NewPlantPage, PlantPage, PlantsPage } from "./pages/Plants";
 import { PlantingPage } from "./pages/Planting";
 import { SettingsPage } from "./pages/Settings";
-import { Today } from "./pages/Today";
 import { NewTrayPage, TrayPage, TraysPage } from "./pages/Trays";
 import { CalendarPage } from "./pages/Calendar";
 import "./styles.css";
@@ -62,7 +61,7 @@ function NotFound() {
     <div className="page-head">
       <div>
         <h1>Not found</h1>
-        <p className="sub">That page isn&rsquo;t in this garden. <Link to="/">Back to today</Link></p>
+        <p className="sub">That page isn&rsquo;t in this garden. <Link to="/">Back home</Link></p>
       </div>
     </div>
   );
@@ -73,12 +72,12 @@ const router = createHashRouter([
   {
     element: <Layout />,
     children: [
-      { path: "/", element: <Today /> },
+      // The home page is the map, the biggest page by far, so it and the map page load in their own chunk, after the app's shell.
+      { path: "/", lazy: async () => ({ Component: (await import("./pages/Home")).HomePage }) },
       { path: "/trays", element: <TraysPage /> },
       { path: "/trays/new", element: <NewTrayPage /> },
       { path: "/trays/:id", element: <TrayPage /> },
       { path: "/calendar", element: <CalendarPage /> },
-      // The map is the biggest page by far; it loads when it's first opened.
       { path: "/map", lazy: async () => ({ Component: (await import("./pages/Map")).MapPage }) },
       { path: "/plantings/:id", element: <PlantingPage /> },
       { path: "/plants", element: <PlantsPage /> },

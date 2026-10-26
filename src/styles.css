@@ -103,6 +103,12 @@ img { max-width: 100%; display: block; }
 .small { font-size: 0.85rem; }
 .tiny { font-size: 0.75rem; }
 .empty { color: var(--muted); font-style: italic; padding: 8px 0; }
+.tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+.tabs button { border: none; background: none; padding: 6px 12px; border-radius: 999px; color: var(--muted); font-weight: 600; font-size: 1rem; }
+.tabs button:hover { background: var(--surface-2); color: var(--text); }
+.tabs button.on { background: var(--green-soft); color: var(--green); }
+.tab-count { display: inline-block; min-width: 1.4em; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 0.75rem; text-align: center; }
+.tabs button.on .tab-count { background: var(--green); color: var(--surface); }
 
 /* Chips & badges */
 .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
@@ -162,6 +168,11 @@ details[open] > summary { margin-bottom: 12px; }
 .care-item .what .title { font-weight: 600; }
 .care-item .thumb { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex: none; background: var(--surface-2); }
 .care-item.is-done .title { color: var(--muted); text-decoration: line-through; }
+/* In the home page's column beside the map there's no room for a row on one line: the chip and button go under the text, as on a phone. */
+.home-side .care-item { flex-wrap: wrap; row-gap: 6px; }
+.home-side .care-item .what { flex-basis: calc(100% - 56px); }
+.home-side .care-item > .chip { margin-left: 56px; }
+.home-side .care-item:not(:has(.thumb)) > .chip { margin-left: 0; }
 
 /* Tray grid */
 .tray { display: grid; gap: 8px; padding: 12px; background: var(--surface-2); border-radius: 16px; border: 1px solid var(--border); }
@@ -342,7 +353,9 @@ button.plant-dot:hover { filter: brightness(1.08); background: radial-gradient(c
 :root { --map-bg: #e9e2cf; }
 @media (prefers-color-scheme: dark) { :root { --map-bg: #2a2f27; } }
 .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
-@media (max-width: 860px) { .map-layout { grid-template-columns: minmax(0, 1fr); } }
+/* The home page: the map, with a wider column beside it for today's care. */
+.map-layout.home { grid-template-columns: minmax(0, 1fr) 380px; }
+@media (max-width: 860px) { .map-layout, .map-layout.home { grid-template-columns: minmax(0, 1fr); } }
 .map-wrap { position: relative; padding: 0; overflow: hidden; height: min(74vh, 760px); min-height: 360px; }
 .map-svg { display: block; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; outline: none; }
 .map-svg:active { cursor: grabbing; }
