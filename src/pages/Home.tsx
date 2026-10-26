@@ -1,17 +1,21 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import { TaskForm } from "@/components/forms";
-import { ActionButton, CareRow, NoteList, Photo, TaskRow, TrayGrid } from "@/components/ui";
+import { ActionButton, CareRow, NoteList, Photo, TaskRow } from "@/components/ui";
 import { logCare, setZoneRun } from "@/lib/actions";
 import { addDays, formatDate, timeIn } from "@/lib/dates";
-import { cellRange, coverPhotos, notesFor, photosFor, plantingViews, sortedTrays, tasksFor, type PlantingView } from "@/lib/garden";
+import { cellRange, coverPhotos, notesFor, photosFor, plantingViews, tasksFor, type PlantingView } from "@/lib/garden";
 import { useGarden } from "@/lib/GardenContext";
 import { describeTimer, formatTime, irrigationZones, lastRun, nextRun, ranWhen, runId, zoneLabel, type Zone } from "@/lib/irrigation";
-import type { CareItem, CareStatus } from "@/lib/schedule";
+import type { CareItem } from "@/lib/schedule";
+import { MiniCalendar } from "./Calendar";
+import { MapPage } from "./Map";
 
-export function Today() {
+/** The home page: the garden map, with today's care and what's coming up (on a small calendar) in tabs beside it, then photos and notes. */
+export function HomePage() {
   const { data, today, act } = useGarden();
+  const [tab, setTab] = useState<"today" | "soon">("today");
   const plantings = plantingViews(data, today);
-  const trays = sortedTrays(data);
   const { byPlanting, bySpecies } = coverPhotos(data);
   const tasks = tasksFor(data);
   const notes = notesFor(data).slice(0, 6);
@@ -40,18 +44,16 @@ export function Today() {
   soon.sort((a, b) => a.item.start.localeCompare(b.item.start));
   const tasksNow = tasks.filter((t) => t.dueDate <= today);
   const tasksSoon = tasks.filter((t) => t.dueDate > today);
-  const urgent = new Map<string, CareStatus>();
-  for (const { p, item } of now) if (item.status !== "due" || !urgent.has(p.id)) urgent.set(p.id, item.status);
   const estimated = plantings.find((p) => p.sowDateEstimated && p.sownAt);
   const recentPhotos = photosFor(data, { kind: "progress" }).slice(0, 8);
   const attention = waterGroups.size + now.length + tasksNow.length;
 
-  return (
+  const head = (
     <>
       <div className="page-head">
         <div>
-          <h1>Today</h1>
-          <p className="sub">{formatDate(today, { weekday: true, year: true })} · {plantings.filter((p) => p.status !== "planned").length} plantings growing</p>
+          <h1>{formatDate(today, { weekday: true })}</h1>
+          <p className="sub">{plantings.filter((p) => p.status !== "planned").length} plantings growing · {attention === 0 ? "all caught up" : `${attention} ${attention === 1 ? "thing needs" : "things need"} you today`}</p>
         </div>
       </div>
 
@@ -74,71 +76,71 @@ export function Today() {
           </span>
         </div>
       )}
+    </>
+  );
 
-      <div className="grid main-side">
-        <div className="stack">
-          <section className="card">
-            <div className="card-head">
-              <h2>Needs attention</h2>
-              <span className="muted small">{attention} things</span>
-            </div>
-            <ul className="care-list">
-              {[...waterGroups.values()].map((g) => {
-                // Each crop once: three rows of beets read as "Beet".
-                const names = [...new Set(g.ids.map((id) => byId.get(id)!.name))].join(", ");
-                if (g.zone) {
-                  const z = g.zone;
-                  // The timer will get to it later today.
-                  const later = nextRun(z.settings.timer, today, time) === today;
-                  const beds = z.beds.filter((b) => g.ids.some((id) => byId.get(id)!.trayId === b.links.trayId)).map((b) => b.name);
-                  return (
-                    <li key={g.label} className="care-item">
-                      <div className="thumb" style={{ display: "grid", placeItems: "center", fontSize: "1.4rem" }}>💦</div>
-                      <div className="what">
-                        <div className="title">{later ? `${g.label} run at ${formatTime(z.settings.timer!.at)}` : `Run the ${g.label}`}</div>
-                        <div className="small muted">{beds.join(", ")}: {names}</div>
-                      </div>
-                      <span className={`chip ${later ? "upcoming" : g.overdue ? "overdue" : "due"}`}>{later ? "later today" : g.overdue ? "overdue" : "today"}</span>
-                      <ActionButton title={`Every planting in ${z.name}'s beds counts as watered`} onClick={() => act((ctx) => setZoneRun(ctx, z.zone, today, "manual"))}>💦 Ran</ActionButton>
-                    </li>
-                  );
-                }
-                return (
-                  <li key={g.label} className="care-item">
-                    <div className="thumb" style={{ display: "grid", placeItems: "center", fontSize: "1.4rem" }}>💧</div>
-                    <div className="what">
-                      <div className="title">{g.mist ? "Mist" : "Water"} the {g.label}</div>
-                      <div className="small muted">{names}</div>
-                    </div>
-                    <span className={`chip ${g.overdue ? "overdue" : "due"}`}>{g.overdue ? "overdue" : "today"}</span>
-                    <ActionButton onClick={() => act((ctx) => logCare(ctx, { plantingIds: g.ids, type: "watered" }))}>💧 Done</ActionButton>
-                  </li>
-                );
-              })}
-              {now.map(({ p, item }) => (
-                <CareRow
-                  key={`${p.id}-${item.key}`}
-                  item={item}
-                  plantingIds={[p.id]}
-                  today={today}
-                  title={`${p.name}: ${item.title}`}
-                  subtitle={<>{p.trayName} {cellRange(p.cells)}{item.detail ? ` · ${item.detail}` : ""}</>}
-                  thumb={cover(p)}
-                  href={`/plantings/${p.id}`}
-                />
-              ))}
-              {tasksNow.map((t) => (
-                <TaskRow key={t.id} task={t} today={today} plantingName={t.plantingId ? byId.get(t.plantingId)?.name : undefined} />
-              ))}
-            </ul>
-            {attention === 0 && <p className="empty">All caught up. 🌞</p>}
-          </section>
+  const todayList = (
+    <>
+      <ul className="care-list">
+        {[...waterGroups.values()].map((g) => {
+          // Each crop once: three rows of beets read as "Beet".
+          const names = [...new Set(g.ids.map((id) => byId.get(id)!.name))].join(", ");
+          if (g.zone) {
+            const z = g.zone;
+            // The timer will get to it later today.
+            const later = nextRun(z.settings.timer, today, time) === today;
+            const beds = z.beds.filter((b) => g.ids.some((id) => byId.get(id)!.trayId === b.links.trayId)).map((b) => b.name);
+            return (
+              <li key={g.label} className="care-item">
+                <div className="thumb" style={{ display: "grid", placeItems: "center", fontSize: "1.4rem" }}>💦</div>
+                <div className="what">
+                  <div className="title">{later ? `${g.label} run at ${formatTime(z.settings.timer!.at)}` : `Run the ${g.label}`}</div>
+                  <div className="small muted">{beds.join(", ")}: {names}</div>
+                </div>
+                <span className={`chip ${later ? "upcoming" : g.overdue ? "overdue" : "due"}`}>{later ? "later today" : g.overdue ? "overdue" : "today"}</span>
+                <ActionButton title={`Every planting in ${z.name}'s beds counts as watered`} onClick={() => act((ctx) => setZoneRun(ctx, z.zone, today, "manual"))}>💦 Ran</ActionButton>
+              </li>
+            );
+          }
+          return (
+            <li key={g.label} className="care-item">
+              <div className="thumb" style={{ display: "grid", placeItems: "center", fontSize: "1.4rem" }}>💧</div>
+              <div className="what">
+                <div className="title">{g.mist ? "Mist" : "Water"} the {g.label}</div>
+                <div className="small muted">{names}</div>
+              </div>
+              <span className={`chip ${g.overdue ? "overdue" : "due"}`}>{g.overdue ? "overdue" : "today"}</span>
+              <ActionButton onClick={() => act((ctx) => logCare(ctx, { plantingIds: g.ids, type: "watered" }))}>💧 Done</ActionButton>
+            </li>
+          );
+        })}
+        {now.map(({ p, item }) => (
+          <CareRow
+            key={`${p.id}-${item.key}`}
+            item={item}
+            plantingIds={[p.id]}
+            today={today}
+            title={`${p.name}: ${item.title}`}
+            subtitle={<>{p.trayName} {cellRange(p.cells)}{item.detail ? ` · ${item.detail}` : ""}</>}
+            thumb={cover(p)}
+            href={`/plantings/${p.id}`}
+          />
+        ))}
+        {tasksNow.map((t) => (
+          <TaskRow key={t.id} task={t} today={today} plantingName={t.plantingId ? byId.get(t.plantingId)?.name : undefined} />
+        ))}
+      </ul>
+      {attention === 0 && <p className="empty">All caught up. 🌞</p>}
+    </>
+  );
 
-          <section className="card">
-            <div className="card-head">
-              <h2>Coming up</h2>
-              <span className="muted small">next 2 weeks</span>
-            </div>
+  // Coming up is the month, with the next two weeks listed under it.
+  const comingUp = (
+    <>
+      <MiniCalendar
+        agenda={
+          <>
+            <h4>Next 2 weeks</h4>
             <ul className="care-list">
               {soon.map(({ p, item }) => (
                 <CareRow
@@ -156,53 +158,56 @@ export function Today() {
                 <TaskRow key={t.id} task={t} today={today} plantingName={t.plantingId ? byId.get(t.plantingId)?.name : undefined} />
               ))}
             </ul>
-            {soon.length + tasksSoon.length === 0 && <p className="empty">Nothing scheduled.</p>}
-            <div style={{ marginTop: 12 }}>
-              <TaskForm today={today} />
-            </div>
-          </section>
-        </div>
-
-        <div className="stack">
-          {trays.map((t) => {
-            const inTray = plantings.filter((p) => p.trayId === t.id);
-            return (
-              <section key={t.id} className="card">
-                <div className="card-head">
-                  <h3><Link to={`/trays/${t.id}`}>{t.name}</Link></h3>
-                  <span className="muted small">{inTray.length} plantings</span>
-                </div>
-                <TrayGrid tray={t} plantings={inTray} covers={byPlanting} urgent={urgent} mini />
-              </section>
-            );
-          })}
-
-          {zones.some((z) => z.trayIds.length) && <IrrigationCard zones={zones.filter((z) => z.trayIds.length)} time={time} />}
-
-          {recentPhotos.length > 0 && (
-            <section className="card">
-              <h3>Latest photos</h3>
-              <div className="gallery">
-                {recentPhotos.map((ph) => (
-                  <Link key={ph.id} to={ph.plantingId ? `/plantings/${ph.plantingId}` : "/"}>
-                    <figure>
-                      <Photo id={ph.id} alt={ph.caption ?? ""} />
-                      <figcaption>{ph.plantingId ? byId.get(ph.plantingId)?.name : ph.caption}</figcaption>
-                    </figure>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section className="card">
-            <h3>Recent notes</h3>
-            <NoteList notes={notes} plantingNames={byId} />
-          </section>
-        </div>
+            {soon.length + tasksSoon.length === 0 && <p className="empty">Nothing scheduled in the next 2 weeks.</p>}
+          </>
+        }
+      />
+      <div style={{ marginTop: 12 }}>
+        <TaskForm today={today} />
       </div>
     </>
   );
+
+  const side = (
+    <div className="stack home-side">
+      <section className="card">
+        <div className="tabs" role="tablist">
+          <button role="tab" aria-selected={tab === "today"} className={tab === "today" ? "on" : ""} onClick={() => setTab("today")}>
+            Today {attention > 0 && <span className="tab-count">{attention}</span>}
+          </button>
+          <button role="tab" aria-selected={tab === "soon"} className={tab === "soon" ? "on" : ""} onClick={() => setTab("soon")}>
+            Coming up {soon.length + tasksSoon.length > 0 && <span className="tab-count">{soon.length + tasksSoon.length}</span>}
+          </button>
+        </div>
+        <div role="tabpanel">{tab === "today" ? todayList : comingUp}</div>
+      </section>
+
+      {zones.some((z) => z.trayIds.length) && <IrrigationCard zones={zones.filter((z) => z.trayIds.length)} time={time} />}
+
+      {recentPhotos.length > 0 && (
+        <section className="card">
+          <h3>Latest photos</h3>
+          <div className="gallery">
+            {recentPhotos.map((ph) => (
+              <Link key={ph.id} to={ph.plantingId ? `/plantings/${ph.plantingId}` : "/"}>
+                <figure>
+                  <Photo id={ph.id} alt={ph.caption ?? ""} />
+                  <figcaption>{ph.plantingId ? byId.get(ph.plantingId)?.name : ph.caption}</figcaption>
+                </figure>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="card">
+        <h3>Recent notes</h3>
+        <NoteList notes={notes} plantingNames={byId} />
+      </section>
+    </div>
+  );
+
+  return <MapPage home={{ head, side }} />;
 }
 
 /** Each zone that waters beds: its timer, when it last ran, and a way to say it ran (or didn't) today. */

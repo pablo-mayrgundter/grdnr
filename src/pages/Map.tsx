@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { ActionButton, TrayGrid } from "@/components/ui";
 import { addMapEntity, applySiteTemplate, createPlanterForEntity, deleteMapEntity, setSite, setZone, setZoneRun, updateGarden, updateMapEntity } from "@/lib/actions";
@@ -84,7 +84,11 @@ function fitView(pj: Projector, width: number, height: number): Pick<View, "zoom
 }
 
 
-export function MapPage() {
+/**
+ * The map page, or with `home` the home page: the same map with the home page's heading, and its column beside the map in place of the map tools.
+ * Either way, selecting something on the map puts its editor in that column.
+ */
+export function MapPage({ home }: { home?: { head: ReactNode; side: ReactNode } }) {
   const { data, today, act } = useGarden();
   const savedSite: Site = data.garden.site ?? DEFAULT_SITE;
   // While the compass is being turned, north follows it before it's saved.
@@ -111,6 +115,34 @@ export function MapPage() {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [view, setView] = useState<View>(() => ({ mode: "iso", rot: 1, zoom: 0, cx: 0, cy: 0, ...readView() }));
   const [hidden, setHidden] = useState<Set<Layer>>(new Set());
+  /** Full screen: the map fills the window, and the screen where the browser allows it. Esc or the button leaves. */
+  const [full, setFull] = useState(false);
+  const enterFull = () => {
+    setFull(true);
+    try {
+      void Promise.resolve(document.documentElement.requestFullscreen?.()).catch(() => {});
+    } catch {
+      // Filling the window is enough.
+    }
+  };
+  const leaveFull = useCallback(() => {
+    setFull(false);
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (ev: KeyboardEvent) => ev.key === "Escape" && leaveFull();
+    // The browser's own Esc (or its exit button) leaves its full screen without a key event reaching the page.
+    const onChange = () => !document.fullscreenElement && setFull(false);
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("fullscreenchange", onChange);
+    };
+  }, [full, leaveFull]);
+  // Leaving the page leaves full screen too.
+  useEffect(() => () => void (document.fullscreenElement && document.exitFullscreen().catch(() => {})), []);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
   /** The door or window being edited on the selected building. */
@@ -488,14 +520,18 @@ export function MapPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Garden map</h1>
-          <p className="sub">The whole lot, house and yards. Drag to pan, scroll or pinch to zoom, tap something to select it, then drag it to move.</p>
+      {home ? (
+        home.head
+      ) : (
+        <div className="page-head">
+          <div>
+            <h1>Garden map</h1>
+            <p className="sub">The whole lot, house and yards. Drag to pan, scroll or pinch to zoom, tap something to select it, then drag it to move.</p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="map-layout">
+      <div className={`map-layout ${home ? "home" : ""} ${full ? "full" : ""}`}>
         <div className="map-main">
         <div className="map-wrap card" ref={wrapRef}>
           <svg
@@ -562,6 +598,13 @@ export function MapPage() {
               <button onClick={() => zoomBy(1.4)} title="Zoom in">+</button>
               <button onClick={() => setView((v) => ({ ...v, ...fitView(pj, size.w, size.h) }))} title="Fit the lot">Fit</button>
             </div>
+            <div className="seg">
+              <button onClick={full ? leaveFull : enterFull} title={full ? "Leave full screen (Esc)" : "Full screen"} aria-label={full ? "Leave full screen" : "Full screen"}>
+                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <path d={full ? "M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" : "M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"} />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <SunClock
@@ -590,65 +633,70 @@ export function MapPage() {
         <ForecastStrip forecast={forecast} picked={sim?.date ?? null} onPick={pickDay} />
         </div>
 
-        <aside className="map-panel stack">
-          {selected ? (
-            <EntityPanel key={selected.id} e={selected} onClose={() => select(null)} onSelect={select} openingSel={openingSel} setOpeningSel={setOpeningSel} />
-          ) : (
-            <>
-              {!empty && <WateringPanel onSelect={select} onAdd={add} onWatch={watch} />}
-              <section className="card">
-                <h3>Add to the map</h3>
-                <p className="small muted">Added in the middle of the view; drag it into place.</p>
-                {LAYER_KEYS.map((l) => (
-                  <div key={l} className="palette-group">
-                    <div className="small muted">{LAYERS[l].label}</div>
-                    <div className="palette">
-                      {KINDS.filter((k) => k.layer === l).map((k) => (
-                        <button key={k.kind} className="small" onClick={() => add(k.kind)} title={k.description}>
-                          {k.icon} {k.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </section>
-              <section className="card">
-                <h3>Layers</h3>
-                <div className="layer-toggles">
-                  {LAYER_KEYS.map((l) => (
-                    <label key={l} className="check">
-                      <input
-                        type="checkbox"
-                        checked={!hidden.has(l)}
-                        onChange={(ev) => setHidden((h) => { const n = new Set(h); if (ev.target.checked) n.delete(l); else n.add(l); return n; })}
-                      />
-                      {LAYERS[l].label}
-                    </label>
-                  ))}
-                </div>
-              </section>
-              {!empty && (
+        {/* In full screen only a selection's editor shows, floating over the map. */}
+        {(!full || selected) && (
+          <aside className="map-panel stack">
+            {selected ? (
+              <EntityPanel key={selected.id} e={selected} onClose={() => select(null)} onSelect={select} openingSel={openingSel} setOpeningSel={setOpeningSel} />
+            ) : home ? (
+              home.side
+            ) : (
+              <>
+                {!empty && <WateringPanel onSelect={select} onAdd={add} onWatch={watch} />}
                 <section className="card">
-                  <details>
-                    <summary>Everything on the map ({data.mapEntities.length})</summary>
-                    <ul className="ent-list">
-                      {[...data.mapEntities]
-                        .sort((a, b) => LAYERS[kindDef(a.kind).layer].order - LAYERS[kindDef(b.kind).layer].order || a.name.localeCompare(b.name))
-                        .map((e) => (
-                          <li key={e.id}>
-                            <button className="ghost small" onClick={() => focusOn(e)}>{kindDef(e.kind).icon} {e.name}</button>
-                          </li>
+                  <h3>Add to the map</h3>
+                  <p className="small muted">Added in the middle of the view; drag it into place.</p>
+                  {LAYER_KEYS.map((l) => (
+                    <div key={l} className="palette-group">
+                      <div className="small muted">{LAYERS[l].label}</div>
+                      <div className="palette">
+                        {KINDS.filter((k) => k.layer === l).map((k) => (
+                          <button key={k.kind} className="small" onClick={() => add(k.kind)} title={k.description}>
+                            {k.icon} {k.label}
+                          </button>
                         ))}
-                    </ul>
-                  </details>
+                      </div>
+                    </div>
+                  ))}
                 </section>
-              )}
-              {!empty && <PetsPanel />}
-              {!empty && <ExportPanel />}
-              <SitePanel site={site} />
-            </>
-          )}
-        </aside>
+                <section className="card">
+                  <h3>Layers</h3>
+                  <div className="layer-toggles">
+                    {LAYER_KEYS.map((l) => (
+                      <label key={l} className="check">
+                        <input
+                          type="checkbox"
+                          checked={!hidden.has(l)}
+                          onChange={(ev) => setHidden((h) => { const n = new Set(h); if (ev.target.checked) n.delete(l); else n.add(l); return n; })}
+                        />
+                        {LAYERS[l].label}
+                      </label>
+                    ))}
+                  </div>
+                </section>
+                {!empty && (
+                  <section className="card">
+                    <details>
+                      <summary>Everything on the map ({data.mapEntities.length})</summary>
+                      <ul className="ent-list">
+                        {[...data.mapEntities]
+                          .sort((a, b) => LAYERS[kindDef(a.kind).layer].order - LAYERS[kindDef(b.kind).layer].order || a.name.localeCompare(b.name))
+                          .map((e) => (
+                            <li key={e.id}>
+                              <button className="ghost small" onClick={() => focusOn(e)}>{kindDef(e.kind).icon} {e.name}</button>
+                            </li>
+                          ))}
+                      </ul>
+                    </details>
+                  </section>
+                )}
+                {!empty && <PetsPanel />}
+                {!empty && <ExportPanel />}
+                <SitePanel site={site} />
+              </>
+            )}
+          </aside>
+        )}
       </div>
     </>
   );

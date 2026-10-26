@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { calendarEntries, monthGrid, type CalendarEntry } from "@/lib/calendar";
 import { formatDate } from "@/lib/dates";
@@ -215,5 +215,82 @@ export function CalendarPage() {
         {forecast.status === "error" && <p className="small muted">The forecast is unavailable right now ({forecast.error}).</p>}
       </section>
     </>
+  );
+}
+
+/** Each kind of entry's dot in the small calendar, in the order they're shown. */
+const DOT_ORDER: CalendarEntry["kind"][] = ["overdue", "scheduled", "task", "logged", "sown", "rain", "task-done"];
+
+/**
+ * The calendar in a narrow column (the home page's Coming up tab): a month of days, each with a colored dot per kind of entry.
+ * Under it is `agenda` (what's coming up), until a day is tapped: then that day's entries, until it's tapped again.
+ * The full calendar is a link away.
+ */
+export function MiniCalendar({ agenda }: { agenda: ReactNode }) {
+  const { data, today } = useGarden();
+  const [month, setMonth] = useState(today.slice(0, 7));
+  const [selected, setSelected] = useState<string | null>(null);
+  const [y, m] = month.split("-").map(Number);
+  const days = monthGrid(y, m - 1);
+  const byDay = new Map<string, CalendarEntry[]>();
+  for (const e of calendarEntries(data, today, days[0], days.at(-1)!)) byDay.set(e.date, [...(byDay.get(e.date) ?? []), e]);
+  const forecast = useForecast();
+  const weather = forecast.status === "ready" && selected ? forecast.value.days.find((f) => f.date === selected) : undefined;
+  const go = (delta: number) => setMonth(new Date(Date.UTC(y, m - 1 + delta, 1)).toISOString().slice(0, 7));
+  const title = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  const list = selected ? (byDay.get(selected) ?? []) : [];
+
+  return (
+    <div className="mini-cal">
+      <div className="mini-cal-head">
+        <button className="ghost" onClick={() => go(-1)} aria-label="Previous month">‹</button>
+        <strong>{title}</strong>
+        <button className="ghost" onClick={() => go(1)} aria-label="Next month">›</button>
+        <span className="spacer" />
+        {month !== today.slice(0, 7) && <button className="ghost small" onClick={() => { setMonth(today.slice(0, 7)); setSelected(null); }}>Today</button>}
+        <Link to={`/calendar?m=${month}`} className="small">Full calendar</Link>
+      </div>
+      <div className="mini-cal-grid">
+        {WEEKDAYS.map((w) => (
+          <div key={w} className="cal-weekday">{w[0]}</div>
+        ))}
+        {days.map((d) => {
+          const kinds = new Set((byDay.get(d) ?? []).map((e) => e.kind));
+          return (
+            <button
+              key={d}
+              className={`mini-cal-day ${d.slice(0, 7) !== month ? "other" : ""} ${d === selected ? "selected" : ""}`}
+              onClick={() => setSelected(d === selected ? null : d)}
+              aria-label={`${formatDate(d, { weekday: true })}: ${(byDay.get(d) ?? []).length || "nothing"}`}
+            >
+              <span className={`cal-date ${d === today ? "today" : ""}`}>{Number(d.slice(8))}</span>
+              <span className="mini-cal-dots">
+                {DOT_ORDER.filter((k) => kinds.has(k)).map((k) => <i key={k} className={`dot ${k}`} />)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {selected ? (
+        <>
+          <h4>
+            {formatDate(selected, { weekday: true })}
+            {weather ? ` · ${weather.icon} ${weather.summary}` : ""}
+            <button className="ghost small" style={{ marginLeft: 8 }} onClick={() => setSelected(null)}>Back to what&rsquo;s coming</button>
+          </h4>
+          {list.length ? (
+            <div className="stack" style={{ gap: 6 }}>
+              {list.map((e, i) => (
+                <Entry key={i} e={e} full />
+              ))}
+            </div>
+          ) : (
+            <p className="empty">Nothing logged or planned.</p>
+          )}
+        </>
+      ) : (
+        agenda
+      )}
+    </div>
   );
 }

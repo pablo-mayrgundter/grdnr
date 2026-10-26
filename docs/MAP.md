@@ -1,6 +1,6 @@
 # Garden map
 
-The map is "Google Maps for your garden": one drawing of the whole lot (house, front and back yards, the side yard where water and power come out of the house) that you can pan, zoom and turn, and edit both on the drawing and in the side panel. It's drawn in the style of an illustrated garden plan (isometric, shaded line art) with a flat plan view for precise layout.
+The map is "Google Maps for your garden", and the app's home page: one drawing of the whole lot (house, front and back yards, the side yard where water and power come out of the house) that you can pan, zoom and turn, and edit both on the drawing and in the side panel. It's drawn in the style of an illustrated garden plan (isometric, shaded line art) with a flat plan view for precise layout.
 
 This document is the spec: the data model, how drawing works, and where new features plug in.
 
@@ -17,7 +17,7 @@ This document is the spec: the data model, how drawing works, and where new feat
 | `src/lib/map/ifc.ts` | The map as a 3D building model (IFC4), for Bldrs and other BIM viewers. |
 | `src/lib/map/template.ts` | The starting lot ("Start from a typical lot"). |
 | `src/lib/actions.ts` | `setSite`, `applySiteTemplate`, `addMapEntity`, `updateMapEntity`, `deleteMapEntity`, `createPlanterForEntity`. The UI and the assistant both go through these. |
-| `src/pages/Map.tsx` | The map page: viewport, pointer and keyboard handling, panels. |
+| `src/pages/Map.tsx` | The map page: viewport, pointer and keyboard handling, panels. With `home`, the same map is the home page, with the home page's column (`src/pages/Home.tsx`) in place of the map tools; selecting something still puts its editor in that column. |
 | `test/map.test.ts` | Projection round trips, ordering, kinds, template, actions, garden-file round trip. |
 | `test/ifc.test.ts` | The 3D export opens in web-ifc (the IFC reader Bldrs uses) with a shape for every kind. |
 
@@ -137,7 +137,7 @@ A kind can also say:
 
 ## Irrigation
 
-`src/lib/irrigation.ts`. Sprinklers, sprinkler lines, drip lines and valves each have a *zone* setting (default "1"). Everything on the same zone runs together, and a run counts as watering for every planting in the beds the zone waters, the same way rain does. One sprinkler run then covers the beets in one bed and the radishes and spinach in the next, and the Today page asks for one run instead of a watering per bed.
+`src/lib/irrigation.ts`. Sprinklers, sprinkler lines, drip lines and valves each have a *zone* setting (default "1"). Everything on the same zone runs together, and a run counts as watering for every planting in the beds the zone waters, the same way rain does. One sprinkler run then covers the beets in one bed and the radishes and spinach in the next, and the home page's Today tab asks for one run instead of a watering per bed.
 
 - **What a zone waters** (`bedsWatered`), worked out from the map (raised beds, in-ground beds, herb gardens and containers):
   - a sprinkler: the beds most of which lie inside its spray radius (at least 5 of 9 points over the bed);
@@ -148,15 +148,15 @@ A kind can also say:
 - **A line's span:** a drip line or sprinkler line is a rectangle: its length (between its end knobs) and its *span*, the width it waters, set with the ↔ knob on its side. A sprinkler line's heads throw to the span's edges, 15% past so neighbors overlap and the bed soaks evenly (`sprayRadius`), unless a spray radius is set. The zone panel switches a line between drip line and sprinkler line in place, keeping where it is, its span and its zone.
 - **Runs** (the `irrigation` store, in the garden file): one record per zone per day, and one per line per day for a line run on its own. A single drip line or sprinkler can run by itself (`head` on the run: a hand-opened line, or a valve per line); that run waters only that line's beds.
   - *timer*: recorded by `IrrigationSync` as the start time passes, and for missed days since the timer was set (up to a month back), while the app is open.
-  - *manual*: someone tapped *Ran* (Today, or the zone panel), or told the assistant.
-  - *skipped*: the timer's run that day didn't happen (*Didn't run* on Today); it doesn't count, and the timer won't fill the day in again.
+  - *manual*: someone tapped *Ran* (on the home page, or in the zone panel), or told the assistant.
+  - *skipped*: the timer's run that day didn't happen (*Didn't run* on the home page); it doesn't count, and the timer won't fill the day in again.
   - Changing a timer takes effect from that day, so earlier runs stay as they were.
 - **Watering:** the care schedule takes the latest of a hand watering, a zone run and rain (`careSchedule`'s `irrigation` input). A run shows as "Zone 1 sprinklers ran today, which counts" and in the planting's history.
 - **Watering panel** (map side panel, with nothing selected): each zone with its timer and last run, and a *Run whole zone* button. Under it, each of the zone's drip lines and sprinklers, the beds it waters, and a *Ran* button for just that one. Tap a line's name to select it on the map. Buttons there add a drip line or a sprinkler.
 - **Spraying:** sprinklers and sprinkler lines spray while they run: jets arc out from each head to its spray radius, drawn as dashes flowing outward over a mist on the ground they wet. Drip emitters pulse. A zone is running while the map's clock (live, or scrubbed to a time) is within its timer's run, unless that day's run was skipped (`zonesRunning`). After *Run whole zone* or a line's *Ran*, or with *▶ Watch it run* (which records nothing), it sprays for 20 seconds.
 - **Drawing:** a sprinkler line is a green hose with a gray stake and a yellow head at each sprinkler, up on a bed where it runs over one. A drip line that runs over a bed (or is linked to one) is drawn on top of the bed, not under it on the ground. It shows as the bed's drip system, over just the part of the bed the line's span covers (`lineArea`; the whole bed for a line with no span set): a header across the end of that area nearest where the tubing comes in, and a lateral beside each of the bed's rows within it (or about one per 1¼ ft) with emitters every foot. Running, only those emitters drip. The tubing and header have a wide invisible edge, so they're easy to click.
 - **Placing runs:** drip lines, fences and trellises are *runs* (`line` in the kinds registry). When one is selected, a big knob at each end (white at the start, blue at the end) drags that end while the other stays put, so a line can be laid across a bed at any angle (`lineEnds`, `lineFromEnds`). Other things keep the corner (resize) and ⟳ (turn) knobs, now larger, with a white halo so they show on any ground.
-- **Today:** due watering is grouped by zone ("Run the Zone 1 sprinklers", or "…run at 6:00 AM" when the timer still has to run today), with one *Ran* button. Plantings no zone waters are grouped by planter as before. An *Irrigation* card lists each zone that waters beds: its timer, when it last ran, and *Ran today* / *Didn't run*.
+- **Home page:** in the Today tab, due watering is grouped by zone ("Run the Zone 1 sprinklers", or "…run at 6:00 AM" when the timer still has to run today), with one *Ran* button. Plantings no zone waters are grouped by planter as before. An *Irrigation* card under the tabs lists each zone that waters beds: its timer, when it last ran, and *Ran today* / *Didn't run*.
 - **Assistant:** its context lists the zones, their lines (with IDs) and the beds each waters, their timers, and the last 10 days of runs. `irrigation_ran` records a zone's run, or one line's with `line_id`, or that one didn't happen. `edit_map` can set a sprinkler's zone and spray radius when it adds the irrigation to the map.
 - Seedlings in outdoor beds are kept moist, not misted: "mist" is for trays.
 
@@ -199,9 +199,10 @@ All of it can be turned off with the 🐦 box in the clock, and it stays still f
 ## Interaction
 
 - Drag the background, or anything that isn't selected, to **pan**. That way a lawn can't be dragged away by accident.
-- Tap or click something to **select** it (`/map?e=<id>`, so a selection can be linked to). Drag the selected thing to **move** it, its corner handle to **resize** it, or the ⟳ handle off the end of its long side to **turn** it (5° steps, 1° with shift). Moves snap to the site grid. The panel shows the turn, and which way the long side runs by the compass ("Rows run 25° from north, NNE–SSW" for a bed); typing a heading turns the bed to match.
+- Tap or click something to **select** it (`/map?e=<id>`, or `/?e=<id>` on the home page, so a selection can be linked to). Drag the selected thing to **move** it, its corner handle to **resize** it, or the ⟳ handle off the end of its long side to **turn** it (5° steps, 1° with shift). Moves snap to the site grid. The panel shows the turn, and which way the long side runs by the compass ("Rows run 25° from north, NNE–SSW" for a bed); typing a heading turns the bed to match.
 - Scroll, pinch, or the − / + buttons to **zoom**. The buttons zoom in on the selection. *Fit* shows the whole lot.
 - *Iso* / *Plan* switch views and ⟲ / ⟳ turn the lot; the ground in the middle of the screen stays put.
+- The corners button makes the map **full screen**: it fills the window, and the screen where the browser allows it (not on iPhone, where it fills the window). Esc or the button leaves. In full screen the side panel shows only a selection's editor, floating over the map.
 - Keyboard (when the map has focus): arrows nudge the selection by the grid step (shift: 1 ft), `[` and `]` turn it 5° (shift: 1°), Delete removes it, Escape clears the selection.
 - The side panel edits the selection live (name, position, size, kind settings, links, notes, duplicate, remove). With nothing selected it shows the add palette, layer toggles, a list of everything on the map, and the lot's settings.
 - New things land in the nearest clear spot to the middle of the view (`freeSpot`).
