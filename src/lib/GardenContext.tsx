@@ -178,7 +178,7 @@ function Welcome({ db, onReady, setGardener }: { db: GardenDB; onReady: () => Pr
         <div className="auth-hero">
           <div className="emoji">🌱</div>
           <h1>Start a garden</h1>
-          <p className="muted">Everything you add stays in this browser on this device. Nothing is uploaded.</p>
+          <p className="muted">Grdnr keeps track of what you plant and when it needs you. Everything you add stays in this browser on this device. Nothing is uploaded.</p>
         </div>
         <form
           className="form"

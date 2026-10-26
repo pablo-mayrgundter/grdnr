@@ -3,6 +3,7 @@
 
 import type { Provider } from "./store.ts";
 
+// Stored under the app's first name, so settings carry over.
 const KEYS = { apiKey: "garden.anthropicKey", provider: "garden.assistantProvider", ollamaUrl: "garden.ollamaUrl", ollamaModel: "garden.ollamaModel" };
 export const OLLAMA_DEFAULTS = { url: "http://localhost:11434", model: "gemma4:12b" };
 

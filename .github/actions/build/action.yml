@@ -3,7 +3,7 @@ description: Install, test, and build the static site into dist/ for the given b
 
 inputs:
   base-path:
-    description: URL path the site is served under, with leading and trailing slash, e.g. /garden/ or /garden/pr-preview/pr-7/.
+    description: URL path the site is served under, with leading and trailing slash, e.g. /grdnr/ or /grdnr/pr-preview/pr-7/.
     required: true
 
 runs:

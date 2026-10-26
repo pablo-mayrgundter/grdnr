@@ -161,7 +161,7 @@ test("a garden file round-trips records, photos and chats", async () => {
   assert.deepEqual([...new Uint8Array(await (await getPhotoBlob(dst, uploaded.id))!.arrayBuffer())], [1, 2, 3, 250]);
   assert.equal(await currentThreadId(dst, "ollama"), thread);
   assert.equal((await loadChat(dst, thread))[0].display?.text, "hi");
-  await assert.rejects(importBackup(dst, { nope: true } as never), /isn't a Herb Garden file/);
+  await assert.rejects(importBackup(dst, { nope: true } as never), /isn't a Grdnr garden file/);
 });
 
 test("version 1 garden files still import", async () => {

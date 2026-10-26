@@ -1,6 +1,6 @@
-# 🌿 Herb Garden
+# 🌿 Grdnr
 
-A small app for tracking a garden: what's planted in each cell, when to water, thin, feed, transplant and harvest, plus notes, photos, a calendar and an AI garden assistant.
+Grdnr is a small app for the gardener, about the work rather than the plot: what's planted in each cell, when to water, thin, feed, transplant and harvest, plus notes, photos, a calendar and an AI garden assistant.
 
 It's a static site (Vite + React) hosted on GitHub Pages. **No garden data is built into the app.** Every garden lives only in the browser that created it (IndexedDB). It starts empty, from a garden file, or from the sample garden, and you can download it as a file at any time.
 
@@ -86,7 +86,7 @@ A phone can't reach `localhost` on your computer. Using a local model from a pho
 ## GitHub Pages and PR previews
 
 - `.github/workflows/pages.yml`: on push to `main`, builds and publishes to the root of the `gh-pages` branch, keeping `pr-preview/`.
-- `.github/workflows/pr-preview.yml`: builds each PR into `…/garden/pr-preview/pr-N/` with [`rossjrw/pr-preview-action`](https://github.com/rossjrw/pr-preview-action) and removes it when the PR closes.
+- `.github/workflows/pr-preview.yml`: builds each PR into `…/grdnr/pr-preview/pr-N/` with [`rossjrw/pr-preview-action`](https://github.com/rossjrw/pr-preview-action) and removes it when the PR closes.
 - `.github/actions/build`: the shared install → test → build step.
 
 Each preview runs at its own address, so it has its own browser storage: it starts empty and never touches the real garden.
@@ -99,7 +99,7 @@ Requires Node ≥ 22.18.
 npm install
 npm run dev     # http://localhost:5173
 npm test        # schedule, storage, planter markdown, beds, map, 3D export and calendar tests (node:test, fake-indexeddb, web-ifc)
-npm run build   # typecheck + static build into dist/ (BASE_PATH=/garden/ mimics Pages)
+npm run build   # typecheck + static build into dist/ (BASE_PATH=/grdnr/ mimics Pages)
 ```
 
 - `src/lib/store.ts`: IndexedDB storage, garden files, and the one-time photo migration.
