@@ -73,7 +73,9 @@ img { max-width: 100%; display: block; }
   border-bottom: 1px solid var(--border);
 }
 .topbar-inner { max-width: 1120px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.brand { font-family: ui-serif, Georgia, serif; font-size: 1.2rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.brand { display: flex; align-items: center; }
+/* The wordmark (components/Logo.tsx): sized by height, in the theme's green; the blooms on the r's keep their own colors. */
+.logo { display: block; height: 1.9rem; width: auto; color: var(--green); overflow: visible; }
 .brand:hover { text-decoration: none; }
 .nav { display: flex; gap: 4px; flex-wrap: wrap; }
 .nav a { padding: 6px 12px; border-radius: 999px; color: var(--muted); font-weight: 500; }
@@ -150,6 +152,7 @@ details[open] > summary { margin-bottom: 12px; }
 .auth-card { width: 100%; max-width: 400px; }
 .auth-hero { text-align: center; margin-bottom: 18px; }
 .auth-hero .emoji { font-size: 2.6rem; }
+.auth-hero .hero-logo { height: 3.6rem; margin: 0 auto 8px; }
 
 /* Care items */
 .care-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }

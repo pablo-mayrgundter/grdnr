@@ -5,6 +5,7 @@ import { AssistantPanel } from "./components/AssistantPanel";
 import { GardenerPicker } from "./components/forms";
 import { Nav } from "./components/Nav";
 import { IrrigationSync } from "./components/IrrigationSync";
+import { Logo } from "./components/Logo";
 import { RainSync } from "./components/RainSync";
 import { GardenProvider, useGarden } from "./lib/GardenContext";
 import { NewPlantPage, PlantPage, PlantsPage } from "./pages/Plants";
@@ -35,7 +36,9 @@ function Layout() {
     <>
       <header className="topbar">
         <div className="topbar-inner">
-          <Link to="/" className="brand">🌿 {data.garden.name}</Link>
+          <Link to="/" className="brand">
+            <Logo />
+          </Link>
           <Nav />
           <span className="spacer" />
           <span className="who">

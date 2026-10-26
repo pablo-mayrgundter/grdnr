@@ -19,7 +19,7 @@ import type { GardenData, Photo } from "../types.ts";
 export const MAX_TOOL_ROUNDS = 8;
 
 // Kept byte-for-byte stable so Claude can cache it; anything that changes per request goes in the user turn.
-export const SYSTEM_PROMPT = `You are the garden assistant inside a small, private garden-tracking web app shared by a household of gardeners.
+export const SYSTEM_PROMPT = `You are the garden assistant inside Grdnr, a small, private garden-tracking web app shared by a household of gardeners.
 
 The app tracks:
 - Planters: containers of cells (seed trays, egg cartons, pots). Cells are named column number + row letter (1A is top-left; "1-2C" means a planting spanning cells 1C and 2C). Each planter's layout can be written as a markdown table with letters on rows and numbers on columns.

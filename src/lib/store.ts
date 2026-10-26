@@ -39,6 +39,7 @@ export type OpenHooks = {
   blocking?: () => void;
 };
 
+// The database is named "garden" from before the app was called Grdnr; the name stays so existing gardens keep opening.
 export async function openGardenDb(name = "garden", hooks: OpenHooks = {}): Promise<GardenDB> {
   const db: GardenDB = await openDB(name, DB_VERSION, {
     blocked: () => hooks.blocked?.(),
@@ -123,6 +124,7 @@ export async function migrateBundledPhotos(db: GardenDB, fetchFile: (src: string
 // ---------- Garden file (full export / import) ----------
 
 export type Backup = {
+  /** The garden file format's ID, from the app's first name; kept as is so every version opens every file. */
   app: "herb-garden";
   version: 1 | 2;
   exportedAt: string;
@@ -175,7 +177,7 @@ function dataUrlToBlob(url: string): Blob {
 /** Replaces everything in this browser with the file's contents. */
 export async function importBackup(db: GardenDB, backup: Backup): Promise<void> {
   if (backup?.app !== "herb-garden" || ![1, 2].includes(backup.version) || !backup.data?.garden)
-    throw new Error("That file isn't a Herb Garden file.");
+    throw new Error("That file isn't a Grdnr garden file.");
   const stores = ["meta", "photoBlobs", "chat", ...RECORD_STORES];
   const tx = db.transaction(stores, "readwrite");
   await Promise.all(stores.map((s) => tx.objectStore(s).clear()));

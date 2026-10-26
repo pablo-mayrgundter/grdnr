@@ -728,7 +728,7 @@ export function exportIfc(data: GardenData, opts: IfcOptions = {}): string {
     "ISO-10303-21;",
     "HEADER;",
     "FILE_DESCRIPTION(('ViewDefinition [ReferenceView_V1.2]'),'2;1');",
-    `FILE_NAME(${str(`${fileSlug(data.garden.name)}.ifc`)},'${stamp}',(''),(''),'Garden tracker','Garden tracker','');`,
+    `FILE_NAME(${str(`${fileSlug(data.garden.name)}.ifc`)},'${stamp}',(''),(''),'Grdnr','Grdnr','');`,
     "FILE_SCHEMA(('IFC4'));",
     "ENDSEC;",
     "DATA;",
