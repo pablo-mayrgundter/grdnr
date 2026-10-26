@@ -8,12 +8,13 @@ import { cellRange, coverPhotos, notesFor, photosFor, plantingViews, tasksFor, t
 import { useGarden } from "@/lib/GardenContext";
 import { describeTimer, formatTime, irrigationZones, lastRun, nextRun, ranWhen, runId, zoneLabel, type Zone } from "@/lib/irrigation";
 import type { CareItem } from "@/lib/schedule";
+import { MiniCalendar } from "./Calendar";
 import { MapPage } from "./Map";
 
-/** The home page: the garden map, with today's care, what's coming up, photos and notes beside it. */
+/** The home page: the garden map, with today's care, what's coming up and the calendar in tabs beside it, then photos and notes. */
 export function HomePage() {
   const { data, today, act } = useGarden();
-  const [tab, setTab] = useState<"today" | "soon">("today");
+  const [tab, setTab] = useState<"today" | "soon" | "calendar">("today");
   const plantings = plantingViews(data, today);
   const { byPlanting, bySpecies } = coverPhotos(data);
   const tasks = tasksFor(data);
@@ -169,8 +170,11 @@ export function HomePage() {
           <button role="tab" aria-selected={tab === "soon"} className={tab === "soon" ? "on" : ""} onClick={() => setTab("soon")}>
             Coming up {soon.length + tasksSoon.length > 0 && <span className="tab-count">{soon.length + tasksSoon.length}</span>}
           </button>
+          <button role="tab" aria-selected={tab === "calendar"} className={tab === "calendar" ? "on" : ""} onClick={() => setTab("calendar")}>
+            Calendar
+          </button>
         </div>
-        <div role="tabpanel">{tab === "today" ? todayList : comingUp}</div>
+        <div role="tabpanel">{tab === "today" ? todayList : tab === "soon" ? comingUp : <MiniCalendar />}</div>
       </section>
 
       {zones.some((z) => z.trayIds.length) && <IrrigationCard zones={zones.filter((z) => z.trayIds.length)} time={time} />}

@@ -199,9 +199,10 @@ All of it can be turned off with the 🐦 box in the clock, and it stays still f
 ## Interaction
 
 - Drag the background, or anything that isn't selected, to **pan**. That way a lawn can't be dragged away by accident.
-- Tap or click something to **select** it (`/map?e=<id>`, so a selection can be linked to). Drag the selected thing to **move** it, its corner handle to **resize** it, or the ⟳ handle off the end of its long side to **turn** it (5° steps, 1° with shift). Moves snap to the site grid. The panel shows the turn, and which way the long side runs by the compass ("Rows run 25° from north, NNE–SSW" for a bed); typing a heading turns the bed to match.
+- Tap or click something to **select** it (`/map?e=<id>`, or `/?e=<id>` on the home page, so a selection can be linked to). Drag the selected thing to **move** it, its corner handle to **resize** it, or the ⟳ handle off the end of its long side to **turn** it (5° steps, 1° with shift). Moves snap to the site grid. The panel shows the turn, and which way the long side runs by the compass ("Rows run 25° from north, NNE–SSW" for a bed); typing a heading turns the bed to match.
 - Scroll, pinch, or the − / + buttons to **zoom**. The buttons zoom in on the selection. *Fit* shows the whole lot.
 - *Iso* / *Plan* switch views and ⟲ / ⟳ turn the lot; the ground in the middle of the screen stays put.
+- The corners button makes the map **full screen**: it fills the window, and the screen where the browser allows it (not on iPhone, where it fills the window). Esc or the button leaves. In full screen the side panel shows only a selection's editor, floating over the map.
 - Keyboard (when the map has focus): arrows nudge the selection by the grid step (shift: 1 ft), `[` and `]` turn it 5° (shift: 1°), Delete removes it, Escape clears the selection.
 - The side panel edits the selection live (name, position, size, kind settings, links, notes, duplicate, remove). With nothing selected it shows the add palette, layer toggles, a list of everything on the map, and the lot's settings.
 - New things land in the nearest clear spot to the middle of the view (`freeSpot`).

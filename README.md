@@ -8,10 +8,10 @@ The sample garden (`public/samples/herb-garden.json`) is our own herb garden: th
 
 ## Features
 
-- **Home**: the garden map, with two tabs beside it. *Today* lists everything that needs doing, grouped so one tap waters a whole planter or records a sprinkler zone's run. *Coming up* shows the next two weeks and your own reminders. Under the tabs are the irrigation zones, the latest photos and recent notes. Tap something on the map to edit it right there.
+- **Home**: the garden map, with three tabs beside it. *Today* lists everything that needs doing, grouped so one tap waters a whole planter or records a sprinkler zone's run. *Coming up* shows the next two weeks and your own reminders. *Calendar* is the month with a dot for each kind of entry; tap a day for its list. Under the tabs are the irrigation zones, the latest photos and recent notes. Tap something on the map to edit it right there.
 - **Garden map**: the whole lot in an isometric drawing, like an illustrated garden plan, or as a flat plan. It's the home page, and the *Map* page adds the tools for building it: adding things, layers, the lot's size and location, watering, pets and the 3D export.
   - **What's on it:** the house (stories, roof, and doors and windows you can add and drag along the walls), front and back yards, fences, paths, pools and a hot tub, beds with their rows of plants, trees (height, clear trunk and spread), water and power on the house, irrigation and future robots.
-  - **Editing:** pan, zoom and turn it, and drag, resize and turn things. A bed's rows can face their real compass heading. Edit things in the side panel.
+  - **Editing:** pan, zoom and turn it, and drag, resize and turn things. A bed's rows can face their real compass heading. Edit things in the side panel. The corners button makes it full screen, and Esc leaves.
   - **Sun and weather:** the sun casts shadows for the real time, or any time and date you scrub to. Set the garden's location (pick a city or paste coordinates from Google Maps) and drag the compass to point at true north. The week's forecast runs under the map (NOAA in the US, Open-Meteo elsewhere): tap a day to see its sun, clouds, rain or snow.
   - **Wildlife:** trees sway, birds come and go, butterflies and hummingbirds find flowering beds, squirrels forage under the trees, and now and then a neighborhood cat drops by. Add your dog, and it comes out the back door to chase them off, sniffs around the yard, and lies out on the patio on sunny days.
   - **3D export:** download it as a building model (IFC) to walk around the house and yard in [Bldrs](https://share.bldrs.ai) or any BIM viewer.
@@ -121,4 +121,4 @@ npm run build   # typecheck + static build into dist/ (BASE_PATH=/grdnr/ mimics 
 - `src/lib/assistant/`: `core.ts` (context, tools), `claude.ts` and `ollama.ts` (backends).
 - `src/lib/map/`: the garden map: data model, kinds of things, projection, drawing, sun, visitors and pets, the starting template, and the IFC export. See [docs/MAP.md](docs/MAP.md).
 - `src/pages/`: one file per page. `Map.tsx` is the map page, and `Home.tsx` puts the same map on the home page beside today's care.
-- `src/components/Logo.tsx`: the Grdnr wordmark, drawn from Bagel Fat One (SIL Open Font License), with a flower for each r.
+- `src/components/Logo.tsx`: the Grdnr wordmark, drawn from Bagel Fat One (SIL Open Font License), with a flower for each r. `public/favicon.svg` and `public/apple-touch-icon.png` (the home-screen icon) are its first r.
