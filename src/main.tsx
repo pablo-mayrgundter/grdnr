@@ -5,6 +5,7 @@ import { AssistantPanel } from "./components/AssistantPanel";
 import { GardenerPicker } from "./components/forms";
 import { Nav } from "./components/Nav";
 import { IrrigationSync } from "./components/IrrigationSync";
+import { Logo } from "./components/Logo";
 import { RainSync } from "./components/RainSync";
 import { GardenProvider, useGarden } from "./lib/GardenContext";
 import { NewPlantPage, PlantPage, PlantsPage } from "./pages/Plants";
@@ -14,8 +15,6 @@ import { Today } from "./pages/Today";
 import { NewTrayPage, TrayPage, TraysPage } from "./pages/Trays";
 import { CalendarPage } from "./pages/Calendar";
 import "./styles.css";
-// The logo's typeface (Caprasimo, bundled with the app: no font service is contacted).
-import "@fontsource/caprasimo/latin.css";
 
 function Layout() {
   const { data, gardener, setGardener } = useGarden();
@@ -38,7 +37,7 @@ function Layout() {
       <header className="topbar">
         <div className="topbar-inner">
           <Link to="/" className="brand" aria-label={`Grdnr: ${data.garden.name}`}>
-            <span className="logo">Grdnr</span>
+            <Logo />
             <span className="brand-garden">{data.garden.name}</span>
           </Link>
           <Nav />

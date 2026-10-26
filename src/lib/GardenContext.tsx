@@ -3,6 +3,7 @@ import { migrateCountedNames, type ActionCtx } from "./actions.ts";
 import { todayIn } from "./dates.ts";
 import { createGarden, getPhotoBlob, importBackup, loadAll, migrateBundledPhotos, openGardenDb, type Backup, type GardenDB } from "./store.ts";
 import type { GardenData, Photo } from "./types.ts";
+import { Logo } from "@/components/Logo";
 
 const GARDENER_KEY = "garden.gardener";
 
@@ -176,7 +177,7 @@ function Welcome({ db, onReady, setGardener }: { db: GardenDB; onReady: () => Pr
     <main className="auth-wrap">
       <div className="card auth-card">
         <div className="auth-hero">
-          <div className="logo hero-logo">Grdnr</div>
+          <Logo className="hero-logo" />
           <h1>Start a garden</h1>
           <p className="muted">Grdnr keeps track of what you plant and when it needs you. Everything you add stays in this browser on this device. Nothing is uploaded.</p>
         </div>

@@ -74,8 +74,8 @@ img { max-width: 100%; display: block; }
 }
 .topbar-inner { max-width: 1120px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--text); }
-/* The wordmark: Caprasimo, a soft, chunky serif whose d curls like a sprout. */
-.logo { font-family: "Caprasimo", ui-serif, Georgia, serif; font-weight: 400; font-size: 1.75rem; line-height: 1; color: var(--green); letter-spacing: 0.01em; }
+/* The wordmark (components/Logo.tsx): sized by height, in the theme's green; the flower on the G keeps its own colors. */
+.logo { display: block; height: 2.6rem; width: auto; color: var(--green); overflow: visible; }
 .brand-garden { font-family: ui-serif, Georgia, serif; font-size: 0.95rem; font-weight: 600; color: var(--muted); padding-left: 10px; border-left: 1px solid var(--border); white-space: nowrap; }
 @media (max-width: 600px) { .brand-garden { display: none; } }
 .brand:hover { text-decoration: none; }
@@ -154,7 +154,7 @@ details[open] > summary { margin-bottom: 12px; }
 .auth-card { width: 100%; max-width: 400px; }
 .auth-hero { text-align: center; margin-bottom: 18px; }
 .auth-hero .emoji { font-size: 2.6rem; }
-.auth-hero .hero-logo { font-size: 3.2rem; margin-bottom: 6px; }
+.auth-hero .hero-logo { height: 5rem; margin: 0 auto 8px; }
 
 /* Care items */
 .care-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
