@@ -36,9 +36,8 @@ function Layout() {
     <>
       <header className="topbar">
         <div className="topbar-inner">
-          <Link to="/" className="brand" aria-label={`Grdnr: ${data.garden.name}`}>
+          <Link to="/" className="brand">
             <Logo />
-            <span className="brand-garden">{data.garden.name}</span>
           </Link>
           <Nav />
           <span className="spacer" />
