@@ -11,10 +11,10 @@ import type { CareItem } from "@/lib/schedule";
 import { MiniCalendar } from "./Calendar";
 import { MapPage } from "./Map";
 
-/** The home page: the garden map, with today's care, what's coming up and the calendar in tabs beside it, then photos and notes. */
+/** The home page: the garden map, with today's care and what's coming up (on a small calendar) in tabs beside it, then photos and notes. */
 export function HomePage() {
   const { data, today, act } = useGarden();
-  const [tab, setTab] = useState<"today" | "soon" | "calendar">("today");
+  const [tab, setTab] = useState<"today" | "soon">("today");
   const plantings = plantingViews(data, today);
   const { byPlanting, bySpecies } = coverPhotos(data);
   const tasks = tasksFor(data);
@@ -134,26 +134,34 @@ export function HomePage() {
     </>
   );
 
+  // Coming up is the month, with the next two weeks listed under it.
   const comingUp = (
     <>
-      <ul className="care-list">
-        {soon.map(({ p, item }) => (
-          <CareRow
-            key={`${p.id}-${item.key}`}
-            item={item}
-            plantingIds={[p.id]}
-            today={today}
-            title={`${p.name}: ${item.title}`}
-            subtitle={<>{p.trayName} {cellRange(p.cells)}</>}
-            thumb={cover(p)}
-            href={`/plantings/${p.id}`}
-          />
-        ))}
-        {tasksSoon.map((t) => (
-          <TaskRow key={t.id} task={t} today={today} plantingName={t.plantingId ? byId.get(t.plantingId)?.name : undefined} />
-        ))}
-      </ul>
-      {soon.length + tasksSoon.length === 0 && <p className="empty">Nothing scheduled in the next 2 weeks.</p>}
+      <MiniCalendar
+        agenda={
+          <>
+            <h4>Next 2 weeks</h4>
+            <ul className="care-list">
+              {soon.map(({ p, item }) => (
+                <CareRow
+                  key={`${p.id}-${item.key}`}
+                  item={item}
+                  plantingIds={[p.id]}
+                  today={today}
+                  title={`${p.name}: ${item.title}`}
+                  subtitle={<>{p.trayName} {cellRange(p.cells)}</>}
+                  thumb={cover(p)}
+                  href={`/plantings/${p.id}`}
+                />
+              ))}
+              {tasksSoon.map((t) => (
+                <TaskRow key={t.id} task={t} today={today} plantingName={t.plantingId ? byId.get(t.plantingId)?.name : undefined} />
+              ))}
+            </ul>
+            {soon.length + tasksSoon.length === 0 && <p className="empty">Nothing scheduled in the next 2 weeks.</p>}
+          </>
+        }
+      />
       <div style={{ marginTop: 12 }}>
         <TaskForm today={today} />
       </div>
@@ -170,11 +178,8 @@ export function HomePage() {
           <button role="tab" aria-selected={tab === "soon"} className={tab === "soon" ? "on" : ""} onClick={() => setTab("soon")}>
             Coming up {soon.length + tasksSoon.length > 0 && <span className="tab-count">{soon.length + tasksSoon.length}</span>}
           </button>
-          <button role="tab" aria-selected={tab === "calendar"} className={tab === "calendar" ? "on" : ""} onClick={() => setTab("calendar")}>
-            Calendar
-          </button>
         </div>
-        <div role="tabpanel">{tab === "today" ? todayList : tab === "soon" ? comingUp : <MiniCalendar />}</div>
+        <div role="tabpanel">{tab === "today" ? todayList : comingUp}</div>
       </section>
 
       {zones.some((z) => z.trayIds.length) && <IrrigationCard zones={zones.filter((z) => z.trayIds.length)} time={time} />}
