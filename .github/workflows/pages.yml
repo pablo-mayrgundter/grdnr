@@ -1,8 +1,9 @@
 name: Deploy to GitHub Pages
 
 # Builds main and publishes it to the root of the gh-pages branch, served at
-# https://<owner>.github.io/<repo>/. clean-exclude keeps the PR previews
-# (pr-preview/, managed by pr-preview.yml) alive across main deploys.
+# https://grdnr.life/ (the custom domain is public/CNAME, so every deploy keeps it).
+# clean-exclude keeps the PR previews (pr-preview/, managed by pr-preview.yml)
+# alive across main deploys.
 
 on:
   push:
@@ -23,8 +24,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: ./.github/actions/build
-        with:
-          base-path: /${{ github.event.repository.name }}/
 
       - name: Deploy to gh-pages
         uses: JamesIves/github-pages-deploy-action@v4

@@ -2,7 +2,7 @@
 
 Grdnr is a small app for the gardener, about the work rather than the plot: a map of the whole yard, what's planted in each cell and row, when to water, thin, feed, transplant and harvest, plus notes, photos, a calendar and an AI garden assistant.
 
-It's a static site (Vite + React) hosted on GitHub Pages at **https://pablo-mayrgundter.github.io/grdnr/**. **No garden data is built into the app.** Every garden lives only in the browser that created it (IndexedDB). It starts empty, from a garden file, or from the sample garden, and you can download it as a file at any time.
+It's a static site (Vite + React) hosted on GitHub Pages at **https://grdnr.life/**. **No garden data is built into the app.** Every garden lives only in the browser that created it (IndexedDB). It starts empty, from a garden file, or from the sample garden, and you can download it as a file at any time.
 
 The sample garden (`public/samples/herb-garden.json`) is our own herb garden: the seed packets, the seed tray from our plan with its first photos, and the map. It's an ordinary garden file, published next to the app and loaded only when someone picks *Explore the sample garden* on the first-visit screen. To refresh it, download a garden file from Settings, remove the `chats`, and replace the file.
 
@@ -82,8 +82,8 @@ The browser talks to Ollama directly, so no extra server is needed.
 
 1. Allow this site's address in Ollama, then start it:
    ```bash
-   OLLAMA_ORIGINS="https://pablo-mayrgundter.github.io" ollama serve
-   # Mac app instead: launchctl setenv OLLAMA_ORIGINS "https://pablo-mayrgundter.github.io", then restart Ollama
+   OLLAMA_ORIGINS="https://grdnr.life" ollama serve
+   # Mac app instead: launchctl setenv OLLAMA_ORIGINS "https://grdnr.life", then restart Ollama
    ollama pull gemma4:12b
    ```
 2. In **Settings → Garden assistant**, choose *Local model (Ollama)*. The server defaults to `http://localhost:11434` and the model to `gemma4:12b`. Press *Test connection*.
@@ -96,10 +96,12 @@ A phone can't reach `localhost` on your computer. Using a local model from a pho
 ## GitHub Pages and PR previews
 
 - `.github/workflows/pages.yml`: on push to `main`, builds and publishes to the root of the `gh-pages` branch, keeping `pr-preview/`.
-- `.github/workflows/pr-preview.yml`: builds each PR into `…/grdnr/pr-preview/pr-N/` with [`rossjrw/pr-preview-action`](https://github.com/rossjrw/pr-preview-action) and removes it when the PR closes.
+- `.github/workflows/pr-preview.yml`: builds each PR into `https://grdnr.life/pr-preview/pr-N/` with [`rossjrw/pr-preview-action`](https://github.com/rossjrw/pr-preview-action) and removes it when the PR closes.
 - `.github/actions/build`: the shared install → test → build step.
+- `public/CNAME`: the custom domain, `grdnr.life`. It's part of every build, so each deploy keeps it.
+- The build's asset paths are relative, and routing is in the URL's `#`, so the same build runs at the site's root, under `pr-preview/pr-N/`, or anywhere else.
 
-Each preview runs at its own address, but on the same site (`pablo-mayrgundter.github.io`), and browser storage belongs to the site, not the address. **A preview opens your real garden**, which is handy for trying a change on real data. Anything you change in a preview changes the real garden too, so download a garden file first before trying anything risky.
+Each preview runs at its own address, but on the same site (`grdnr.life`), and browser storage belongs to the site, not the address. **A preview opens your real garden**, which is handy for trying a change on real data. Anything you change in a preview changes the real garden too, so download a garden file first before trying anything risky.
 
 ## Development
 
@@ -109,7 +111,7 @@ Requires Node ≥ 22.18.
 npm install
 npm run dev     # http://localhost:5173
 npm test        # schedule, storage, planters, beds, map, irrigation, weather, wildlife, 3D export and calendar tests (node:test, fake-indexeddb, web-ifc)
-npm run build   # typecheck + static build into dist/ (BASE_PATH=/grdnr/ mimics Pages)
+npm run build   # typecheck + static build into dist/ (asset paths are relative, so it runs from any path)
 ```
 
 - `src/lib/store.ts`: IndexedDB storage, garden files, and the one-time photo migration.

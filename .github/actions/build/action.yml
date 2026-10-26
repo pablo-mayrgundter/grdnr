@@ -1,10 +1,5 @@
 name: Build the garden site
-description: Install, test, and build the static site into dist/ for the given base path.
-
-inputs:
-  base-path:
-    description: URL path the site is served under, with leading and trailing slash, e.g. /grdnr/ or /grdnr/pr-preview/pr-7/.
-    required: true
+description: Install, test, and build the static site into dist/. The build works at any URL path.
 
 runs:
   using: composite
@@ -24,6 +19,4 @@ runs:
 
     - name: Build
       shell: bash
-      env:
-        BASE_PATH: ${{ inputs.base-path }}
       run: npm run build && touch dist/.nojekyll
