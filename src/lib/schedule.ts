@@ -69,14 +69,16 @@ export function careSchedule(p: ScheduleInput, today: string): CareItem[] {
   if (!ACTIVE.includes(p.status) || !p.sownAt) return [];
 
   const items: CareItem[] = [];
-  const sprouted = sproutedOn(p.events);
+  // A resowing starts a new schedule cycle. Older care events belong to the previous crop.
+  const events = p.events.filter((e) => e.date >= p.sownAt!);
+  const sprouted = sproutedOn(events);
 
   // Watering
   const interval = wateringInterval(p);
   // Whatever watered it last: a hand watering, the sprinklers, or rain.
-  const byHand = lastEvent(p.events, "watered");
-  const rained = p.rain?.filter((r) => r.date <= today).at(-1) ?? null;
-  const irrigated = p.irrigation?.filter((r) => r.date <= today).at(-1) ?? null;
+  const byHand = lastEvent(events, "watered");
+  const rained = p.rain?.filter((r) => r.date >= p.sownAt! && r.date <= today).at(-1) ?? null;
+  const irrigated = p.irrigation?.filter((r) => r.date >= p.sownAt! && r.date <= today).at(-1) ?? null;
   const latest = [byHand ?? "", irrigated?.date ?? "", rained?.date ?? ""].sort().at(-1)!;
   const irrigatedLast = irrigated && irrigated.date === latest && byHand !== latest ? irrigated : null;
   const rainedLast = rained && rained.date === latest && byHand !== latest && !irrigatedLast ? rained : null;
@@ -126,7 +128,7 @@ export function careSchedule(p: ScheduleInput, today: string): CareItem[] {
     if (!base) continue; // sprout-relative milestones wait for sprouts
     const start = addDays(base, m.dayMin);
     const end = addDays(base, m.dayMax);
-    const done = p.events
+    const done = events
       .filter((e) => e.type === m.event && daysBetween(base, e.date) >= 0)
       .map((e) => e.date)
       .sort()[0];

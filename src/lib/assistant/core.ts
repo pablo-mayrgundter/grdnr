@@ -35,7 +35,7 @@ Each user message starts with an <app_context> block describing today's date, th
 
 How to help:
 - Answer as a knowledgeable, practical gardener. Be specific to this garden's plants, cells, dates and packet instructions rather than generic. Keep answers short and skimmable; use short lists when listing steps.
-- When the user tells you something happened ("we watered the tray", "the parsley came up", "thinned the lettuce"), record it with log_care. When they share an observation or ask you to remember something, save it with add_note. When they want a reminder, use create_task. When a sow date or status is wrong, fix it with update_planting. When they plant, move or clear cells, or set up a new planter, rewrite its layout with update_planter_layout, then mark newly sown plantings with update_planting. When they describe or change the layout of the yard (add a bed, move the fence, plan sprinklers), use edit_map. When they say the sprinklers or drip system ran (or didn't), record it once for the zone with irrigation_ran rather than logging a watering for each planting; if the beds' irrigation isn't on the map yet, offer to add it with edit_map (sprinklers with a zone and a spray radius that covers the beds).
+- When the user tells you something happened ("we watered the tray", "the parsley came up", "thinned the lettuce"), record it with log_care. When they share an observation or ask you to remember something, save it with add_note. When they want a reminder, use create_task. When a sow date or status is wrong, fix it with update_planting. When the user says they replanted, reseeded, or sowed seeds again in the same spots, use record_resowing for the affected existing plantings so their sow date and schedule restart; do not save this as a note or log it as transplanted. If they moved seedlings to new cells or containers, that is transplanting: update the planter layout and log_care with type transplanted. When they plant, move or clear cells, or set up a new planter, rewrite its layout with update_planter_layout, then mark newly sown plantings with update_planting. When they describe or change the layout of the yard (add a bed, move the fence, plan sprinklers), use edit_map. When they say the sprinklers or drip system ran (or didn't), record it once for the zone with irrigation_ran rather than logging a watering for each planting; if the beds' irrigation isn't on the map yet, offer to add it with edit_map (sprinklers with a zone and a spray radius that covers the beds).
 - Only record things the user said happened or asked you to record. Never invent care events. If you're unsure which planting they mean, ask.
 - After using a tool, briefly confirm what you recorded.
 - Wikipedia links and packet info are in the app; you don't need to repeat them unless asked.`;
@@ -262,8 +262,17 @@ export const TOOL_SPECS: ToolSpec[] = [
     },
   },
   {
+    name: "record_resowing",
+    description:
+      "Record seeds being sown again (reseeded/replanted) in the same planting spots. Resets the selected existing plantings to status sown with a new sow date, restarting their care schedules. Use for one or more plantings when seeds were sown again; do not use for moving seedlings to another cell or container (that is transplanting).",
+    properties: {
+      planting_ids: { type: "array", items: { type: "string" }, description: "IDs of existing plantings that were resown (the [bracketed] IDs in context)." },
+      date: { type: "string", description: "YYYY-MM-DD, or empty string for today." },
+    },
+  },
+  {
     name: "update_planting",
-    description: "Correct a planting's status and/or sow date.",
+    description: "Correct a planting's existing status and/or sow date when the recorded information was wrong. For seeds sown again in the same spots, use record_resowing instead.",
     properties: {
       planting_id: { type: "string" },
       status: { type: "string", enum: [...PLANTING_STATUSES, "unchanged"] },
@@ -330,7 +339,7 @@ export const TOOL_SPECS: ToolSpec[] = [
   { name: "view_photo", description: "Look at one of the garden's photos by ID.", properties: { photo_id: { type: "string" } } },
 ];
 
-export const MUTATING = new Set(["log_care", "add_note", "create_task", "update_planting", "update_planter_layout", "edit_map", "irrigation_ran"]);
+export const MUTATING = new Set(["log_care", "add_note", "create_task", "record_resowing", "update_planting", "update_planter_layout", "edit_map", "irrigation_ran"]);
 
 const LogCare = z.object({
   planting_ids: z.array(z.string()).min(1),
@@ -342,6 +351,7 @@ const LogCare = z.object({
 });
 const AddNote = z.object({ planting_id: z.string().default(""), body: z.string().min(1) });
 const CreateTask = z.object({ title: z.string().min(1), due_date: z.string(), planting_id: z.string().default("") });
+const RecordResowing = z.object({ planting_ids: z.array(z.string()).min(1), date: z.string().default("") });
 const UpdatePlanting = z.object({
   planting_id: z.string(),
   status: z.enum([...PLANTING_STATUSES, "unchanged"]).default("unchanged"),
@@ -419,6 +429,20 @@ export async function runTool(name: string, raw: unknown, deps: AssistantDeps): 
         if (r.data.planting_id && !planting(r.data.planting_id)) return fail("Unknown planting ID.");
         await deps.act((ctx) => addNote(ctx, { plantingId: r.data.planting_id || null, body: r.data.body, byAssistant: true }));
         return { text: "Note saved.", summary: `Saved a note${r.data.planting_id ? ` on ${nameOf(r.data.planting_id)}` : ""}` };
+      }
+      case "record_resowing": {
+        const r = RecordResowing.safeParse(raw);
+        if (!r.success) return fail(`Invalid input: ${r.error.message}`);
+        const ids = [...new Set(r.data.planting_ids)];
+        const missing = ids.find((id) => !planting(id));
+        if (missing) return fail(`Unknown planting ID [${missing}]. Nothing was changed.`);
+        const date = r.data.date || deps.today;
+        if (!isDate(date)) return fail("date must be YYYY-MM-DD");
+        await deps.act(async (ctx) => {
+          for (const id of ids) await updatePlanting(ctx, id, { status: "sown", sownAt: date, sowDateEstimated: false });
+        });
+        const names = ids.map((id) => `${nameOf(id)} [${id}]`).join(", ");
+        return { text: `Recorded resowing on ${date} for ${ids.length} planting(s). Their care schedules now start from that date.`, summary: `Recorded reseeding for ${names}` };
       }
       case "create_task": {
         const r = CreateTask.safeParse(raw);
