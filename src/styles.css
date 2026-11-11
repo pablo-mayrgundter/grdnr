@@ -197,6 +197,9 @@ details[open] > summary { margin-bottom: 12px; }
 .tray.mini .cell .label { display: none; }
 
 /* Photos */
+.photo-form:focus { outline: none; }
+.photo-drop { display: flex; flex-direction: column; gap: 8px; }
+.photo-drop-preview { width: 100%; max-height: 220px; object-fit: contain; border-radius: 10px; background: var(--surface-2); }
 .hero-photo { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius); background: var(--surface-2); }
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
 .gallery figure { margin: 0; }
@@ -362,7 +365,10 @@ button.plant-dot:hover { filter: brightness(1.08); background: radial-gradient(c
 .cond-swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 
 .packet-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.packet-slot { display: flex; flex-direction: column; gap: 4px; }
+.packet-slot { display: flex; flex-direction: column; gap: 4px; border-radius: 12px; }
+.packet-photo-picker { gap: 4px; }
+.packet-slot:focus { outline: none; }
+.packet-slot:focus-visible { outline: 2px solid color-mix(in srgb, var(--green) 50%, transparent); outline-offset: 2px; }
 .packet-empty { flex-direction: column; justify-content: center; gap: 6px; border: 2px dashed var(--border); background: var(--surface-2); color: var(--muted); font-size: 0.85rem; }
 
 /* ---------- Garden map ---------- */

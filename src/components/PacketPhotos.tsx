@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { addPhoto, deletePhoto } from "@/lib/actions";
 import { photosFor } from "@/lib/garden";
 import { useGarden } from "@/lib/GardenContext";
 import type { Species } from "@/lib/types";
-import { shrink } from "./forms";
+import { PhotoPicker, shrink } from "./forms";
 import { Photo } from "./ui";
 
 const SIDES = [
@@ -15,8 +15,6 @@ const SIDES = [
 export function PacketPhotos({ species }: { species: Species }) {
   const { data, act, today } = useGarden();
   const [busy, setBusy] = useState<string | null>(null);
-  const inputs = useRef<Record<string, HTMLInputElement | null>>({});
-
   const save = async (kind: (typeof SIDES)[number]["kind"], file: File) => {
     setBusy(kind);
     try {
@@ -39,32 +37,15 @@ export function PacketPhotos({ species }: { species: Species }) {
           <div key={kind} className="packet-slot">
             {photo ? (
               <Photo id={photo.id} alt={`${species.commonName} packet ${label.toLowerCase()}`} className="packet" link />
-            ) : (
-              <button type="button" className="packet packet-empty" onClick={() => inputs.current[kind]?.click()} disabled={busy === kind}>
-                <span style={{ fontSize: "1.6rem" }}>📷</span>
-                <span>Add packet {label.toLowerCase()}</span>
-              </button>
-            )}
-            <div className="row between small">
-              <span className="muted">{label}</span>
-              {photo && (
-                <button type="button" className="ghost small" onClick={() => inputs.current[kind]?.click()} disabled={busy === kind}>
-                  {busy === kind ? "Saving…" : "Replace"}
-                </button>
-              )}
-            </div>
-            <input
-              ref={(el) => {
-                inputs.current[kind] = el;
-              }}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (f) save(kind, f);
-              }}
+            ) : <div className="packet packet-empty"><span style={{ fontSize: "1.6rem" }}>📷</span><span>Add packet {label.toLowerCase()}</span></div>}
+            <span className="small muted">{label}</span>
+            <PhotoPicker
+              className="packet-photo-picker"
+              previewClassName="photo-drop-preview"
+              label={`${photo ? "Replace" : "Add"} packet ${label.toLowerCase()}`}
+              buttonLabel={busy === kind ? "Saving…" : photo ? "Replace" : "Choose photo"}
+              busy={busy === kind}
+              onFile={(file) => void save(kind, file)}
             />
           </div>
         );
