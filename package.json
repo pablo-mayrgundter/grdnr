@@ -11,7 +11,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/*.test.ts"
+    "test": "node --test test/*.test.ts",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.134.0",

@@ -61,12 +61,13 @@ test("image paste targeting", () => {
 });
 
 test("text fields keep text pastes, file inputs do not", () => {
-  assert.equal(isTextPasteTarget({ tagName: "TEXTAREA" }), true);
-  assert.equal(isTextPasteTarget({ tagName: "INPUT", type: "text" }), true);
-  assert.equal(isTextPasteTarget({ tagName: "INPUT", type: "date" }), true);
-  assert.equal(isTextPasteTarget({ tagName: "INPUT", type: "file" }), false);
-  assert.equal(isTextPasteTarget({ tagName: "INPUT", type: "checkbox" }), false);
-  assert.equal(isTextPasteTarget({ tagName: "BUTTON" }), false);
-  assert.equal(isTextPasteTarget({ tagName: "DIV", isContentEditable: true }), true);
+  const target = (value: object) => value as unknown as EventTarget;
+  assert.equal(isTextPasteTarget(target({ tagName: "TEXTAREA" })), true);
+  assert.equal(isTextPasteTarget(target({ tagName: "INPUT", type: "text" })), true);
+  assert.equal(isTextPasteTarget(target({ tagName: "INPUT", type: "date" })), true);
+  assert.equal(isTextPasteTarget(target({ tagName: "INPUT", type: "file" })), false);
+  assert.equal(isTextPasteTarget(target({ tagName: "INPUT", type: "checkbox" })), false);
+  assert.equal(isTextPasteTarget(target({ tagName: "BUTTON" })), false);
+  assert.equal(isTextPasteTarget(target({ tagName: "DIV", isContentEditable: true })), true);
   assert.equal(isTextPasteTarget(null), false);
 });
