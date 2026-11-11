@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { addNote, addPhoto, addTask, createPlanting, logCare, saveSpecies, updateGarden, updatePlanting } from "@/lib/actions";
+import { acceptsImagePaste, imageFileFromClipboard, isTextPasteTarget, readClipboardImage } from "@/lib/clipboard";
 import { isDate } from "@/lib/dates";
 import { useGarden } from "@/lib/GardenContext";
 import { CONDITION_KEYS, CONDITIONS, EVENT_TYPES, PLANTING_STATUSES, type Condition, type EventType, type PlantingStatus } from "@/lib/model";
@@ -141,6 +142,52 @@ export function TaskForm({ plantingId, today }: { plantingId?: string; today: st
   );
 }
 
+/**
+ * Image pastes aimed at this element. The paste event is delivered to whatever is focused, so this
+ * also watches the pointer: hovering the widget and pressing paste lands the image here.
+ * Returns false from the handler to leave the paste alone.
+ */
+export function useImagePaste<T extends HTMLElement>(onImage: (file: File, root: T, event: ClipboardEvent) => boolean | void) {
+  const ref = useRef<T | null>(null);
+  const onImageRef = useRef(onImage);
+  onImageRef.current = onImage;
+
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const root = ref.current;
+      const data = e.clipboardData;
+      if (!root || !data) return;
+      const target = e.target;
+      const node = target instanceof Node ? target : null;
+      const inside = !!node && root.contains(node);
+      const inOtherWidget = !inside && target instanceof Element && !!target.closest("[data-photo-paste]");
+      const text = isTextPasteTarget(target) ? data.getData("text").trim() : "";
+      if (!acceptsImagePaste({ inside, hovered: root.matches(":hover"), inOtherWidget, textFieldWithText: text !== "" })) return;
+      const file = imageFileFromClipboard(data);
+      if (!file) return;
+      if (onImageRef.current(file, root, e) === false) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, []);
+
+  return ref;
+}
+
+/** Put a pasted image onto a file input so the form shows its name. */
+function placeOnInput(file: File, input: HTMLInputElement | null) {
+  if (!input) return;
+  try {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+  } catch {
+    // The pasted file is kept aside and submitted from there.
+  }
+}
+
 /** Downscale big phone photos before storing them. */
 export async function shrink(file: File, maxSide = 1600): Promise<Blob> {
   if (!file.type.startsWith("image/") || file.type === "image/gif") return file;
@@ -159,6 +206,74 @@ export async function shrink(file: File, maxSide = 1600): Promise<Blob> {
   }
 }
 
+/** Shared file picker and clipboard paste surface for every photo upload. */
+export function PhotoPicker({
+  onFile,
+  busy = false,
+  label = "Choose photo",
+  buttonLabel,
+  className = "",
+  previewClassName = "photo-drop-preview",
+}: {
+  onFile: (file: File) => void | Promise<void>;
+  busy?: boolean;
+  label?: string;
+  buttonLabel?: string;
+  className?: string;
+  previewClassName?: string;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const previewUrl = useRef<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [pasteError, setPasteError] = useState<string | null>(null);
+  const setPreviewFile = (file: File | null) => {
+    if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+    previewUrl.current = file ? URL.createObjectURL(file) : null;
+    setPreview(previewUrl.current);
+  };
+  useEffect(() => () => { if (previewUrl.current) URL.revokeObjectURL(previewUrl.current); }, []);
+  const adopt = (file: File, syncInput: boolean) => {
+    setPasteError(null);
+    if (syncInput) placeOnInput(file, fileRef.current);
+    setPreviewFile(file);
+    const result = onFile(file);
+    if (buttonLabel && result instanceof Promise) void result.then(() => setPreviewFile(null));
+  };
+  const pendingRef = useRef(busy);
+  pendingRef.current = busy;
+  const zoneRef = useImagePaste<HTMLDivElement>((file) => {
+    if (pendingRef.current) return;
+    adopt(file, true);
+  });
+  const paste = async () => {
+    setPasteError(null);
+    try {
+      const file = await readClipboardImage();
+      if (!file) { setPasteError("No image on the clipboard."); return; }
+      adopt(file, true);
+    } catch {
+      setPasteError("Couldn't read the clipboard. Select this box and paste.");
+      zoneRef.current?.focus();
+    }
+  };
+  return (
+    <div ref={zoneRef} data-photo-paste="" tabIndex={-1} className={`photo-drop ${className}`} onMouseDown={(e) => {
+      if (e.target instanceof Element && e.target.closest("input, textarea, button, a, select, label")) return;
+      e.preventDefault(); zoneRef.current?.focus();
+    }}>
+      {preview && <img src={preview} alt="Photo to add" className={previewClassName} />}
+      <input ref={fileRef} type="file" name="photo" accept="image/*" aria-label={label} hidden={!!buttonLabel} onChange={(e) => {
+        const f = e.target.files?.[0]; if (f) adopt(f, false);
+      }} />
+      <div className="row between">
+        {buttonLabel ? <button type="button" className="ghost small" disabled={busy} onClick={() => fileRef.current?.click()}>{buttonLabel}</button> : <span className="small muted">or paste a copied image</span>}
+        <button type="button" className="ghost small" disabled={busy} onClick={() => void paste()}>Paste</button>
+      </div>
+      {pasteError && <span className="small" role="status">{pasteError}</span>}
+    </div>
+  );
+}
+
 export function PhotoUpload({
   plantingId,
   speciesId,
@@ -173,20 +288,25 @@ export function PhotoUpload({
   today: string;
 }) {
   const { act } = useGarden();
+  const held = useRef<File | null>(null);
+
   const { state, pending, onSubmit } = useSubmit(async (fd) => {
-    const file = fd.get("photo");
-    if (!(file instanceof File) || !file.size) return { error: "Choose a photo." };
+    const fromInput = fd.get("photo");
+    const file = held.current?.size ? held.current : fromInput instanceof File ? fromInput : null;
+    if (!(file instanceof File) || !file.size) return { error: "Choose or paste a photo." };
     if (!file.type.startsWith("image/")) return { error: "That isn't an image." };
     const blob = await shrink(file);
     const takenAt = isDate(str(fd, "takenAt")) ? str(fd, "takenAt") : today;
     await act((ctx) =>
       addPhoto(ctx, { plantingId: plantingId ?? null, speciesId: speciesId ?? null, trayId: trayId ?? null, kind, caption: str(fd, "caption") || null, takenAt }, blob),
     );
+    held.current = null;
     return { ok: "Added" };
   });
+
   return (
-    <form className="form" onSubmit={onSubmit}>
-      <input type="file" name="photo" accept="image/*" required />
+    <form className="form photo-form" onSubmit={onSubmit}>
+      <PhotoPicker busy={pending} onFile={(file) => { held.current = file; }} />
       <div className="form-grid">
         <label>Caption<input name="caption" placeholder="Optional" /></label>
         <label>Taken<input type="date" name="takenAt" defaultValue={today} max={today} /></label>
