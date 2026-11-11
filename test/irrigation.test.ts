@@ -182,6 +182,23 @@ test("the assistant records a zone run in one go, and knows the zones", async ()
   await db.close();
 });
 
+test("the assistant records resowing for several existing plantings and restarts their dates", async () => {
+  const { db, today, ctx } = await garden("assistant-resowing");
+  let cache = (await ctx()).data;
+  const deps = { db, today, gardener: "Pablo", latest: () => cache, act: async <T,>(fn: (c: ActionCtx) => Promise<T>) => fn(await ctx()) };
+  const out = await runTool("record_resowing", { planting_ids: ["p1", "p2"], date: "" }, deps);
+  assert.ok(!out.isError, out.text);
+  assert.match(out.text, /care schedules now start from that date/);
+  const updated = (await ctx()).data;
+  assert.deepEqual(updated.plantings.filter((p) => ["p1", "p2"].includes(p.id)).map((p) => [p.status, p.sownAt, p.sowDateEstimated]), [
+    ["sown", today, false],
+    ["sown", today, false],
+  ]);
+  assert.ok((await runTool("record_resowing", { planting_ids: ["p1", "missing"], date: "" }, deps)).isError);
+  assert.equal((await ctx()).data.notes.length, 0);
+  await db.close();
+});
+
 test("a run is placed by its two ends: dragging one end keeps the other where it was", () => {
   const drip = head("drip-line", 9, 11.9); // 8 ft east–west from (9, 12)
   const [a, b] = lineEnds(drip);

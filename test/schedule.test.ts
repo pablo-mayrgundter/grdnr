@@ -69,3 +69,19 @@ test("sprout-relative milestones wait for sprouts and complete on the matching e
   const thinned = { ...sprouted, events: [...sprouted.events, { type: "thinned", date: "2026-10-14" }] };
   assert.equal(byKey(careSchedule(thinned, "2026-10-20"), "thin").status, "done");
 });
+
+test("resowing starts a fresh schedule and ignores care events from the previous crop", () => {
+  const resown = base({
+    sownAt: "2026-10-11",
+    events: [
+      { type: "watered", date: "2026-10-05" },
+      { type: "sprouted", date: "2026-10-10" },
+      { type: "thinned", date: "2026-10-10" },
+    ],
+  });
+  const items = careSchedule(resown, "2026-10-11");
+  assert.equal(byKey(items, "water").status, "due");
+  assert.equal(byKey(items, "sprout").start, "2026-10-16");
+  assert.equal(byKey(items, "sprout").status, "upcoming");
+  assert.equal(items.find((i) => i.key === "thin"), undefined);
+});
